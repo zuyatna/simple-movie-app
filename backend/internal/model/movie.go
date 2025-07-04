@@ -18,3 +18,17 @@ type Movie struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 }
+
+func (m *Movie) ToCacheableMovie() Movie {
+	return Movie{
+		ID:          m.ID,
+		Title:       m.Title,
+		Description: m.Description,
+		Year:        m.Year,
+		Rating:      m.Rating,
+		PosterURL:   m.PosterURL,
+		CreatedAt:   m.CreatedAt,
+		UpdatedAt:   m.UpdatedAt,
+		DeletedAt:   m.DeletedAt,
+	}
+}
