@@ -59,14 +59,40 @@ func (m movieRepository) CreateMovie(movie *model.Movie) (*model.Movie, error) {
 }
 
 func (m movieRepository) UpdateMovie(movie *model.Movie) (*model.Movie, error) {
-	err := m.db.Save(movie).Error
+	var existingMovie model.Movie
+	err := m.db.First(&existingMovie, movie.ID).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, sql.ErrNoRows
+		}
+		return nil, err
+	}
+
+	updates := map[string]interface{}{}
+	if movie.Title != "" {
+		updates["title"] = movie.Title
+	}
+	if movie.Description != "" {
+		updates["description"] = movie.Description
+	}
+	if movie.Year != 0 {
+		updates["year"] = movie.Year
+	}
+	if movie.Rating != 0 {
+		updates["rating"] = movie.Rating
+	}
+	if len(movie.Poster) > 0 {
+		updates["poster"] = movie.Poster
+	}
+	if movie.PosterURL != "" {
+		updates["poster_url"] = movie.PosterURL
+	}
+
+	err = m.db.Model(&existingMovie).Updates(updates).Error
 	if err != nil {
 		return nil, err
 	}
-	if movie.ID == 0 {
-		return nil, sql.ErrNoRows
-	}
-	return movie, nil
+	return &existingMovie, nil
 }
 
 func (m movieRepository) DeleteMovie(id uint) error {
