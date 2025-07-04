@@ -37,23 +37,41 @@ func (m *movieUsecase) FindAllMovie() ([]model.Movie, error) {
 	cacheKey := "all_movies"
 	val, err := m.redisClient.Get(cacheKey).Result()
 	if err == redis.Nil {
-		var movies []model.Movie
-		if json.Unmarshal([]byte(val), &movies) == nil {
-			return movies, nil
+		movies, err := m.movieRepo.FindAllMovie()
+		if err != nil {
+			return nil, err
 		}
+
+		cacheableMovies := make([]model.Movie, len(movies))
+		for i, movie := range movies {
+			cacheableMovies[i] = movie.ToCacheableMovie()
+		}
+
+		jsonData, _ := json.Marshal(cacheableMovies)
+		m.redisClient.Set(cacheKey, jsonData, time.Hour*1).Err()
+		return movies, nil
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	movies, err := m.movieRepo.FindAllMovie()
+	var movies []model.Movie
+	if json.Unmarshal([]byte(val), &movies) == nil {
+		return movies, nil
+	}
+
+	movies, err = m.movieRepo.FindAllMovie()
 	if err != nil {
 		return nil, err
 	}
 
-	jsonData, _ := json.Marshal(movies)
+	cacheableMovies := make([]model.Movie, len(movies))
+	for i, movie := range movies {
+		cacheableMovies[i] = movie.ToCacheableMovie()
+	}
+
+	jsonData, _ := json.Marshal(cacheableMovies)
 	m.redisClient.Set(cacheKey, jsonData, time.Hour*1).Err()
-
 	return movies, nil
 }
 
@@ -61,23 +79,31 @@ func (m *movieUsecase) FindByMovieID(id uint) (model.Movie, error) {
 	cacheKey := fmt.Sprintf("movie:%d", id)
 	val, err := m.redisClient.Get(cacheKey).Result()
 	if err == redis.Nil {
-		var movie model.Movie
-		if json.Unmarshal([]byte(val), &movie) == nil {
-			return movie, nil
+		movie, err := m.movieRepo.FindByMovieID(id)
+		if err != nil {
+			return model.Movie{}, err
 		}
+
+		jsonData, _ := json.Marshal(movie)
+		m.redisClient.Set(cacheKey, jsonData, time.Hour*1).Err()
+		return movie, nil
 	}
 	if err != nil {
 		return model.Movie{}, err
 	}
 
-	movie, err := m.movieRepo.FindByMovieID(id)
+	var movie model.Movie
+	if json.Unmarshal([]byte(val), &movie) == nil {
+		return movie, nil
+	}
+
+	movie, err = m.movieRepo.FindByMovieID(id)
 	if err != nil {
 		return model.Movie{}, err
 	}
 
 	jsonData, _ := json.Marshal(movie)
 	m.redisClient.Set(cacheKey, jsonData, time.Hour*1).Err()
-
 	return movie, nil
 }
 
