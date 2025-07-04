@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
+	"movie-api/internal/handler"
+	"movie-api/internal/middleware"
+	"movie-api/internal/repository"
+	"movie-api/internal/usecase"
 	"movie-api/pkg/database"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -43,14 +47,39 @@ func main() {
 	}()
 	log.Println("Redis initialized successfully")
 
+	userRepo := repository.NewUserRepository(gormDB)
+	authUsecase := usecase.NewAuthUsecase(userRepo)
+	authHandler := handler.NewAuthHandler(authUsecase)
+
+	movieRepo := repository.NewMovieRepository(gormDB)
+	movieUsecase := usecase.NewMovieUsecase(movieRepo, redisClient, context.Background())
+	movieHandler := handler.NewMovieHandler(movieUsecase)
+
 	router := gin.Default()
 
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Welcome to the Movie API",
-		})
-	})
+	api := router.Group("/api/v1")
+	{
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", authHandler.Register)
+			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.RefreshToken)
+		}
 
-	log.Println("Starting server on :8081")
-	router.Run(":8081")
+		api.GET("/movies", movieHandler.FindAllMovie)
+		api.GET("/movies/:id", movieHandler.FindByMovieID)
+		api.GET("/movies/:id/poster", movieHandler.GetMoviePoster)
+
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthMiddleware())
+		{
+			admin.POST("/movies", movieHandler.CreateMovie)
+			// TODO: Implement UpdateMovie and DeleteMovie handlers
+		}
+	}
+
+	log.Println("Starting server on port :8081")
+	if err := router.Run(":8081"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
