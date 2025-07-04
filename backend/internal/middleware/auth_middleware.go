@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"movie-api/internal/model"
 	"movie-api/pkg/utils"
 	"net/http"
 	"os"
@@ -37,7 +38,12 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", claims.UserID)
+		user := &model.User{
+			Username: claims.Username,
+			Role:     claims.Role,
+		}
+
+		c.Set("user", user)
 		c.Next()
 	}
 }
