@@ -11,7 +11,7 @@ type MovieRepository interface {
 	FindAllMovie() ([]model.Movie, error)
 	FindByMovieID(id uint) (model.Movie, error)
 	CreateMovie(movie *model.Movie) (*model.Movie, error)
-	UpdateMovie(movie *model.Movie) (*model.Movie, error)
+	UpdateMovie(id uint, movie *model.Movie) (*model.Movie, error)
 	DeleteMovie(id uint) error
 }
 
@@ -58,41 +58,18 @@ func (m movieRepository) CreateMovie(movie *model.Movie) (*model.Movie, error) {
 	return movie, nil
 }
 
-func (m movieRepository) UpdateMovie(movie *model.Movie) (*model.Movie, error) {
-	var existingMovie model.Movie
-	err := m.db.First(&existingMovie, movie.ID).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, sql.ErrNoRows
-		}
-		return nil, err
-	}
-
-	updates := map[string]interface{}{}
-	if movie.Title != "" {
-		updates["title"] = movie.Title
-	}
-	if movie.Description != "" {
-		updates["description"] = movie.Description
-	}
-	if movie.Year != 0 {
-		updates["year"] = movie.Year
-	}
-	if movie.Rating != 0 {
-		updates["rating"] = movie.Rating
-	}
-	if len(movie.Poster) > 0 {
-		updates["poster"] = movie.Poster
-	}
-	if movie.PosterURL != "" {
-		updates["poster_url"] = movie.PosterURL
-	}
-
-	err = m.db.Model(&existingMovie).Updates(updates).Error
+func (m movieRepository) UpdateMovie(id uint, movie *model.Movie) (*model.Movie, error) {
+	existingMovie, err := m.FindByMovieID(id)
 	if err != nil {
 		return nil, err
 	}
-	return &existingMovie, nil
+
+	movie.ID = existingMovie.ID
+	err = m.db.Save(movie).Error
+	if err != nil {
+		return nil, err
+	}
+	return movie, nil
 }
 
 func (m movieRepository) DeleteMovie(id uint) error {
