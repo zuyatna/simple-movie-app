@@ -2,6 +2,7 @@ package database
 
 import (
 	"log"
+	"movie-api/internal/model"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -24,7 +25,13 @@ func InitDB() *gorm.DB {
 	}
 
 	log.Println("Connected to the database successfully")
-	// TODO: Add migrations here if needed
+	log.Println("Migrating database schema...")
+
+	err = db.AutoMigrate(&model.Movie{}, &model.User{})
+	if err != nil {
+		log.Fatalf("failed to migrate database schema: %v", err)
+	}
+	log.Println("Database schema migrated successfully")
 
 	return db
 }
