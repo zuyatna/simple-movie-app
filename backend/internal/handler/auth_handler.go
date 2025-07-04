@@ -73,7 +73,7 @@ func (ah *AuthHandler) RefreshToken(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
 		return
 	}
-	newToken, err := utils.GenerateToken(claims.UserID)
+	newToken, err := utils.GenerateToken(claims.Username, claims.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new token"})
 		return
