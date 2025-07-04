@@ -69,8 +69,17 @@ func (mh *MovieHandler) GetMoviePoster(c *gin.Context) {
 }
 
 func (mh *MovieHandler) CreateMovie(c *gin.Context) {
-	year, _ := strconv.Atoi(c.PostForm("year"))
-	rating, _ := strconv.ParseFloat(c.PostForm("rating"), 64)
+	year, err := strconv.Atoi(c.PostForm("year"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid year format"})
+		return
+	}
+
+	rating, err := strconv.ParseFloat(c.PostForm("rating"), 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid rating format"})
+		return
+	}
 
 	movie := model.Movie{
 		Title:       c.PostForm("title"),
@@ -80,11 +89,27 @@ func (mh *MovieHandler) CreateMovie(c *gin.Context) {
 	}
 
 	file, err := c.FormFile("poster")
-	if err == nil {
-		openedFile, _ := file.Open()
+	if err != nil {
+		fmt.Printf("Error getting poster file: %v\n", err)
+	} else {
+		fmt.Printf("File received: %s, Size: %d bytes\n", file.Filename, file.Size)
+
+		openedFile, err := file.Open()
+		if err != nil {
+			fmt.Printf("Error opening file: %v\n", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to open poster file"})
+			return
+		}
 		defer openedFile.Close()
 
-		imageBytes, _ := io.ReadAll(openedFile)
+		imageBytes, err := io.ReadAll(openedFile)
+		if err != nil {
+			fmt.Printf("Error reading file: %v\n", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read poster file"})
+			return
+		}
+
+		fmt.Printf("Image bytes read: %d bytes\n", len(imageBytes))
 		movie.Poster = imageBytes
 	}
 
@@ -94,6 +119,7 @@ func (mh *MovieHandler) CreateMovie(c *gin.Context) {
 		return
 	}
 
+	createdMovie.PosterURL = fmt.Sprintf("/api/v1/movies/%d/poster", createdMovie.ID)
 	c.JSON(http.StatusCreated, createdMovie)
 }
 
