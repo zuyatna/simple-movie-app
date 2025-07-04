@@ -8,11 +8,11 @@ import (
 )
 
 type MovieRepository interface {
-	FindAll() ([]model.Movie, error)
-	FindByID(id uint) (model.Movie, error)
-	Create(movie *model.Movie) (*model.Movie, error)
-	Update(movie *model.Movie) (*model.Movie, error)
-	Delete(id uint) error
+	FindAllMovie() ([]model.Movie, error)
+	FindByMovieID(id uint) (model.Movie, error)
+	CreateMovie(movie *model.Movie) (*model.Movie, error)
+	UpdateMovie(movie *model.Movie) (*model.Movie, error)
+	DeleteMovie(id uint) error
 }
 
 type movieRepository struct {
@@ -23,7 +23,7 @@ func NewMovieRepository(db *gorm.DB) MovieRepository {
 	return &movieRepository{db: db}
 }
 
-func (m movieRepository) FindAll() ([]model.Movie, error) {
+func (m movieRepository) FindAllMovie() ([]model.Movie, error) {
 	var movies []model.Movie
 	err := m.db.Order("created_at DESC").Find(&movies).Error
 	if err != nil {
@@ -32,7 +32,7 @@ func (m movieRepository) FindAll() ([]model.Movie, error) {
 	return movies, nil
 }
 
-func (m movieRepository) FindByID(id uint) (model.Movie, error) {
+func (m movieRepository) FindByMovieID(id uint) (model.Movie, error) {
 	var movie model.Movie
 	err := m.db.First(&movie, id).Error
 	if err != nil {
@@ -47,7 +47,7 @@ func (m movieRepository) FindByID(id uint) (model.Movie, error) {
 	return movie, nil
 }
 
-func (m movieRepository) Create(movie *model.Movie) (*model.Movie, error) {
+func (m movieRepository) CreateMovie(movie *model.Movie) (*model.Movie, error) {
 	err := m.db.Create(movie).Error
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (m movieRepository) Create(movie *model.Movie) (*model.Movie, error) {
 	return movie, nil
 }
 
-func (m movieRepository) Update(movie *model.Movie) (*model.Movie, error) {
+func (m movieRepository) UpdateMovie(movie *model.Movie) (*model.Movie, error) {
 	err := m.db.Save(movie).Error
 	if err != nil {
 		return nil, err
@@ -69,6 +69,6 @@ func (m movieRepository) Update(movie *model.Movie) (*model.Movie, error) {
 	return movie, nil
 }
 
-func (m movieRepository) Delete(id uint) error {
+func (m movieRepository) DeleteMovie(id uint) error {
 	return m.db.Delete(&model.Movie{}, id).Error
 }
