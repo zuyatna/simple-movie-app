@@ -7,21 +7,21 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 type Claims struct {
-	UserID uuid.UUID `json:"user_id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID uuid.UUID) (map[string]string, error) {
-	accessToken, err := generateAcessToken(userID)
+func GenerateToken(username, role string) (map[string]string, error) {
+	accessToken, err := generateAcessToken(username, role)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := generateRefreshToken(userID)
+	refreshToken, err := generateRefreshToken(username, role)
 	if err != nil {
 		return nil, err
 	}
@@ -32,14 +32,15 @@ func GenerateToken(userID uuid.UUID) (map[string]string, error) {
 	}, nil
 }
 
-func generateAcessToken(userID uuid.UUID) (string, error) {
+func generateAcessToken(username, role string) (string, error) {
 	lifespan, err := strconv.Atoi(os.Getenv("ACCESS_TOKEN_LIFESPAN"))
 	if err != nil {
 		return "", err
 	}
 
 	claims := &Claims{
-		UserID: userID,
+		Username: username,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * time.Duration(lifespan))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -50,14 +51,15 @@ func generateAcessToken(userID uuid.UUID) (string, error) {
 	return token.SignedString([]byte(os.Getenv("JWT_ACCESS_SECRET_KEY")))
 }
 
-func generateRefreshToken(userID uuid.UUID) (string, error) {
+func generateRefreshToken(username, role string) (string, error) {
 	lifespan, err := strconv.Atoi(os.Getenv("REFRESH_TOKEN_LIFESPAN"))
 	if err != nil {
 		return "", err
 	}
 
 	claims := &Claims{
-		UserID: userID,
+		Username: username,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * time.Duration(lifespan))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
