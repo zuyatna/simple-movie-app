@@ -49,7 +49,7 @@ func (a *authUsecase) Login(payload *model.LoginPayload) (map[string]string, err
 		return nil, errors.New("invalid credentials")
 	}
 
-	token, err := utils.GenerateToken(user.ID)
+	token, err := utils.GenerateToken(user.Username, user.Role)
 	if err != nil {
 		return nil, err
 	}
