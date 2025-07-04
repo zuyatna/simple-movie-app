@@ -72,6 +72,7 @@ func main() {
 
 		admin := api.Group("/admin")
 		admin.Use(middleware.AuthMiddleware())
+		admin.Use(middleware.AdminMiddleware())
 		{
 			admin.POST("/movies", movieHandler.CreateMovie)
 			// TODO: Implement UpdateMovie and DeleteMovie handlers
